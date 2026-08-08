@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html land="en">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, inital-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Greeble - FROG ALALLA</title>
   <link rel="stylesheet" href="style.css">
 
@@ -84,7 +84,7 @@
       <section class="canvas-area">
         <div class="canvas-header">
           <div class="canvas-title">
-            <span class="eyeborw"> Preview - FROGGYY LANNDD</span>
+            <span class="eyebrow"> Preview - FROGGYY LANNDD</span>
             <h1 id="patternTitle"> FROG MASTER</h1>
             <p> Your generated palete or something idk man</p>
           </div>
@@ -99,9 +99,132 @@
             </canvas>
           </div>
         </div>
-        
+        <div class="canvas-controls">
+          <div class="preview-resolution">
+            <span> Priview</span>
+            <strong>1200x1200</strong>
+          </div>
+          <button
+            class="button button-primary"
+            id="randomizeSeed"
+            type="button">
+          <span>aa</span>
+          New pattern
+          </button>
+        </div>
       </section>
+      <aside class="sidebar sidebar-right">
+        <div class="panel-section">
+          <div class="section-heading">
+          <h2>Personalize</h2>
+          <p>add a small signature</p>
+          </div>
+
+        <div class="field">
+          <label for="name"> Name</label>
+          <input
+            type="text"
+            id="name"
+            placeholder="Your Name :)"
+            maxlength="24"
+            autocomplete="off">
+
+        </div>
+        <div class="control">
+          <div class="control-header">
+            <label for="nameFrequency">
+              Name Frequency
+            </label>
+            <span id="nameFrequencyValue">
+              Rare
+            </span>
+          </div>
+          <input
+            type="range"
+            id="nameFrequency"
+            min="0"
+            max="100"
+            value="15">
+          </div>
+        </div>
+        <div class="panel-section">
+          <div class="section-heading">
+            <h2>Export</h2>
+            <p>Choose Your image RES</p>
+          </div>
+          <div class="resolution-grid">
+            <button
+              class="resolution-option"
+              data-resoltuion="1200"
+              type="button"
+              >
+              <strong>1200</strong>
+              <span>x 1200</span>
+            </button>
+            <button
+              class="resolution-option"
+              data-resoltuion="200"
+              type="button"
+              >
+              <strong>2000</strong>
+              <span>x 2000</span>
+            </button>
+            <button
+              class="resolution-option active"
+              data-resoltuion="2744"
+              type="button"
+              >
+              <strong>2744</strong>
+              <span>x 2744</span>
+            </button>
+            <button
+              class="resolution-option"
+              data-resoltuion="4000"
+              type="button"
+              >
+              <strong>4000</strong>
+              <span>x 4000</span>
+            </button>
+
+          </div>
+          <button
+            class="button button-secondary full-button"
+            id="export"
+            type="button">
+            Export PNG
+            <span>down</span>
+          </button>
+        </div>
+        <div class="panel-seciton pattern-info">
+          <div class="section-heading">
+            <h2>Pattern</h2>
+            <p>generated procdurally</p>
+          </div>
+          <div class="info-row">
+            <span>motifs</span>
+            <strong>7</strong>
+          </div>
+          <div class="info-row">
+            <span>preview</span>
+            <strong>1200x1200</strong>
+          </div>
+          <div class="info-row">
+            <span>format</span>
+            <strong>png</strong>
+          </div>
+        </div>
+        <div class="sidebar-footer">
+          <div class="status">
+            <span class="status-dot"></span>
+            <span>Ready</span>
+          </div>
+          <span class="version">
+            v0.1
+          </span>
+        </div>
+      </aside>
     </main>
   </div>
+  <script src="script.js"></script>
 </body>
 </html>
