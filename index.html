@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html land="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, inital-scale=1.0">
+  <title>Greeble - FROG ALALLA</title>
+  <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+  <div class="app">
+    <main class="workspace">
+      <aside class="sidebar sidebar-left">
+        <div class="panel-section">
+          <div class="section-heading">
+            <h2>Compostion</h2>
+            <p>Shape the overall artwork</p>
+          </div>
+
+          <div class="control">
+            <div class="control-header">
+              <label for="density">Density</label>
+              <span id="densityValue">55%</span>
+            </div>
+            <input
+              type="range"
+              id="density"
+              min="10"
+              max="100"
+              value="55">
+          </div>
+          <div class="control">
+            <div class="control-header">
+              <label for="motifRatio">Frog / flower</label>
+              <span id="motifRatioValue">70/30</span>
+            </div>
+            <input
+              type="range"
+              id="motifRatio"
+              min="0"
+              max="100"
+              value="70">
+          </div>
+          <div class="control">
+            <div class="control-header">
+              <label for="sizeVariation">Size Variation</label>
+              <span id="sizeVariationValue">40%</span>
+            </div>
+            <input
+              type="range"
+              id="sizeVariation"
+              min="0"
+              max="100"
+              value="40">
+          </div>
+          <div class="control">
+            <div class="control-header">
+              <label for="rotation">Rotation</label>
+              <span id="rotationValue">25*</span>
+            </div>
+            <input
+              type="range"
+              id="rotation"
+              min="0"
+              max="180"
+              value="25">
+          </div>
+          <div class="control">
+            <div class="control-header">
+              <label for="spacing">Spacing</label>
+              <span id="spacingValue">50%</span>
+            </div>
+            <input
+              type="range"
+              id="spacing"
+              min="0"
+              max="100"
+              value="50">
+          </div>
+
+        </div>
+      </aside>
+
+      <section class="canvas-area">
+        <div class="canvas-header">
+          <div class="canvas-title">
+            <span class="eyeborw"> Preview - FROGGYY LANNDD</span>
+            <h1 id="patternTitle"> FROG MASTER</h1>
+            <p> Your generated palete or something idk man</p>
+          </div>
+        </div>
+
+        <div class="canvas-wrapper">
+          <div class="canvas-frame">
+            <canvas 
+              id="canvas"
+              width="1200"
+              height="1200">
+            </canvas>
+          </div>
+        </div>
+        
+      </section>
+    </main>
+  </div>
+</body>
+</html>
