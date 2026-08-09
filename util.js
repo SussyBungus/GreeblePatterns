@@ -82,16 +82,23 @@ export function getPixelMask(image, maskSize = 200) {
   };
 }
 
-export function createTransformedMask(pixelMask, size, rotation, flip) {
+export function createTransformedMask(
+  pixelMask,
+  size,
+  rotation,
+  flip
+) {
+  const maskSize = pixelMask.width;
+
   const sourceCanvas = document.createElement("canvas");
   const sourceCtx = sourceCanvas.getContext("2d");
 
-  sourceCanvas.width = pixelMask.width;
-  sourceCanvas.height = pixelMask.height;
+  sourceCanvas.width = maskSize;
+  sourceCanvas.height = maskSize;
 
   const sourceImageData = sourceCtx.createImageData(
-    pixelMask.width,
-    pixelMask.height
+    maskSize,
+    maskSize
   );
 
   for (let i = 0; i < pixelMask.mask.length; i++) {
@@ -100,77 +107,208 @@ export function createTransformedMask(pixelMask, size, rotation, flip) {
     sourceImageData.data[i * 4] = 255;
     sourceImageData.data[i * 4 + 1] = 255;
     sourceImageData.data[i * 4 + 2] = 255;
-    sourceImageData.data[i * 4 + 3] = value ? 255 : 0;
+    sourceImageData.data[i * 4 + 3] =
+      value ? 255 : 0;
   }
 
-  sourceCtx.putImageData(sourceImageData, 0, 0);
+  sourceCtx.putImageData(
+    sourceImageData,
+    0,
+    0
+  );
 
+  // Keep collision mask small.
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
 
-  canvas.width = Math.ceil(size * 2);
-  canvas.height = Math.ceil(size * 2);
+  canvas.width = maskSize;
+  canvas.height = maskSize;
 
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.rotate((rotation * Math.PI) / 180);
+  const ctx = canvas.getContext("2d", {
+    willReadFrequently: true,
+  });
+
+  ctx.translate(
+    maskSize / 2,
+    maskSize / 2
+  );
+
+  ctx.rotate(
+    (rotation * Math.PI) / 180
+  );
 
   if (flip) {
     ctx.scale(-1, 1);
   }
 
-  ctx.drawImage(sourceCanvas, -size / 2, -size / 2, size, size);
+  ctx.drawImage(
+    sourceCanvas,
+    -maskSize / 2,
+    -maskSize / 2,
+    maskSize,
+    maskSize
+  );
 
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const imageData = ctx.getImageData(
+    0,
+    0,
+    maskSize,
+    maskSize
+  );
 
   return {
     data: imageData.data,
-    width: canvas.width,
-    height: canvas.height,
+    width: maskSize,
+    height: maskSize,
+
+    // Actual motif size in canvas pixels.
+    scale: size / maskSize,
   };
 }
 
 export function checkPixelCollision(objectA, objectB) {
-  const halfA = objectA.pixelMask.width / 2;
-  const halfB = objectB.pixelMask.width / 2;
+  const maskA = objectA.pixelMask;
+  const maskB = objectB.pixelMask;
+
+  const scaleA = maskA.scale;
+  const scaleB = maskB.scale;
+
+  // Actual collision bounds in canvas pixels
+  const halfA = objectA.size / 2;
+  const halfB = objectB.size / 2;
 
   const leftA = objectA.x - halfA;
   const topA = objectA.y - halfA;
+
   const leftB = objectB.x - halfB;
   const topB = objectB.y - halfB;
 
+  const rightA = objectA.x + halfA;
+  const bottomA = objectA.y + halfA;
+
+  const rightB = objectB.x + halfB;
+  const bottomB = objectB.y + halfB;
+
+  // Quick bounding-box check
   const startX = Math.max(leftA, leftB);
   const startY = Math.max(topA, topB);
 
-  const endX = Math.min(
-    leftA + objectA.pixelMask.width,
-    leftB + objectB.pixelMask.width
-  );
-  const endY = Math.min(
-    topA + objectA.pixelMask.height,
-    topB + objectB.pixelMask.height
-  );
+  const endX = Math.min(rightA, rightB);
+  const endY = Math.min(bottomA, bottomB);
 
-  if (startX >= endX || startY >= endY) {
+  if (
+    startX >= endX ||
+    startY >= endY
+  ) {
     return false;
   }
 
-  for (let y = startY; y < endY; y++) {
-    for (let x = startX; x < endX; x++) {
-      const ax = Math.floor(x - leftA);
-      const ay = Math.floor(y - topA);
-      const bx = Math.floor(x - leftB);
-      const by = Math.floor(y - topB);
+  // Convert canvas coordinates into mask coordinates.
+  const startMaskAX = Math.max(
+    0,
+    Math.floor(
+      (startX - leftA) / scaleA
+    )
+  );
 
-      const indexA = (ay * objectA.pixelMask.width + ax) * 4;
-      const indexB = (by * objectB.pixelMask.width + bx) * 4;
+  const startMaskAY = Math.max(
+    0,
+    Math.floor(
+      (startY - topA) / scaleA
+    )
+  );
 
-      const alphaA = objectA.pixelMask.data[indexA + 3];
-      const alphaB = objectB.pixelMask.data[indexB + 3];
+  const startMaskBX = Math.max(
+    0,
+    Math.floor(
+      (startX - leftB) / scaleB
+    )
+  );
 
-      if (alphaA > 20 && alphaB > 20) {
-    console.log("PIXEL COLLISION!");
-    return true;
-}
+  const startMaskBY = Math.max(
+    0,
+    Math.floor(
+      (startY - topB) / scaleB
+    )
+  );
+
+  const endMaskAX = Math.min(
+    maskA.width,
+    Math.ceil(
+      (endX - leftA) / scaleA
+    )
+  );
+
+  const endMaskAY = Math.min(
+    maskA.height,
+    Math.ceil(
+      (endY - topA) / scaleA
+    )
+  );
+
+  const endMaskBX = Math.min(
+    maskB.width,
+    Math.ceil(
+      (endX - leftB) / scaleB
+    )
+  );
+
+  const endMaskBY = Math.min(
+    maskB.height,
+    Math.ceil(
+      (endY - topB) / scaleB
+    )
+  );
+
+  // Compare the overlapping region.
+  for (
+    let ay = startMaskAY;
+    ay < endMaskAY;
+    ay++
+  ) {
+    for (
+      let ax = startMaskAX;
+      ax < endMaskAX;
+      ax++
+    ) {
+      const indexA =
+        (ay * maskA.width + ax) * 4;
+
+      if (maskA.data[indexA + 3] <= 20) {
+        continue;
+      }
+
+      // Position of this mask pixel
+      // in actual canvas coordinates.
+      const worldX =
+        leftA + (ax + 0.5) * scaleA;
+
+      const worldY =
+        topA + (ay + 0.5) * scaleA;
+
+      // Convert that position into B's mask.
+      const bx = Math.floor(
+        (worldX - leftB) / scaleB
+      );
+
+      const by = Math.floor(
+        (worldY - topB) / scaleB
+      );
+
+      if (
+        bx < 0 ||
+        bx >= maskB.width ||
+        by < 0 ||
+        by >= maskB.height
+      ) {
+        continue;
+      }
+
+      const indexB =
+        (by * maskB.width + bx) * 4;
+
+      if (maskB.data[indexB + 3] > 20) {
+        return true;
+      }
     }
   }
 
@@ -205,14 +343,14 @@ export function placeMotifs({
     imageIndex++;
 
     const size = randomBetween(minSize, maxSize, random);
+
     const rotation = randomBetween(
       -rotationRange,
       rotationRange,
       random
     );
 
-    const flip =
-      allowFlip && random() < 0.5;
+    const flip = allowFlip && random() < 0.5;
 
     let placed = false;
 
@@ -229,19 +367,7 @@ export function placeMotifs({
         random
       );
 
-      const collision = checkCollision(
-        x,
-        y,
-        size,
-        [...existingObjects, ...objects],
-        spacing
-      );
-
-      if (collision) {
-        continue;
-      }
-
-
+      // Create the candidate first
       const candidate = {
         image: image.image,
 
@@ -259,45 +385,63 @@ export function placeMotifs({
         flip,
       };
 
+      const nearbyObjects = [
+        ...existingObjects,
+        ...objects,
+      ];
+
+      // ----------------------------------------
+      // STEP 1: Cheap circle collision
+      // ----------------------------------------
+
+      const circleCollision = checkCollision(
+        x,
+        y,
+        size,
+        nearbyObjects,
+        spacing
+      );
+
+      // If circles DON'T overlap,
+      // there is definitely no collision.
+      if (!circleCollision) {
+        objects.push(candidate);
+        placed = true;
+        break;
+      }
+
+      // ----------------------------------------
+      // STEP 2: Expensive pixel collision
+      // Only happens when circles overlap
+      // ----------------------------------------
 
       let pixelCollision = false;
 
-      for (const object of [
-        ...existingObjects,
-        ...objects,
-      ]) {
-        if (
-          object.pixelMask &&
-          candidate.pixelMask
-        ) {
-          if (
-            checkPixelCollision(
-              candidate,
-              object
-            )
-          ) {
-            pixelCollision = true;
-            break;
-          }
+      for (const object of nearbyObjects) {
+        if (!object.pixelMask) {
+          continue;
+        }
+
+        if (checkPixelCollision(candidate, object)) {
+          pixelCollision = true;
+          break;
         }
       }
 
+      // Actual pixels overlap → reject
       if (pixelCollision) {
         continue;
       }
 
-
+      // Circles overlap, BUT actual pixels don't
+      // → allow placement
       objects.push(candidate);
-
       placed = true;
       break;
     }
 
     if (!placed) {
-      console.log(
-        "Could not place motif",
-        i
-      );
+      console.log("Could not place motif", i);
     }
   }
 
