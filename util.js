@@ -39,37 +39,19 @@ export function shuffleArray(array, random) {
 
 export function getPixelMask(image, maskSize = 200) {
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d", {
-    willReadFrequently: true,
-  });
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
   canvas.width = maskSize;
   canvas.height = maskSize;
 
-  ctx.drawImage(
-    image,
-    0,
-    0,
-    maskSize,
-    maskSize
-  );
+  ctx.drawImage(image, 0, 0, maskSize, maskSize);
 
-  const imageData = ctx.getImageData(
-    0,
-    0,
-    maskSize,
-    maskSize
-  );
-
+  const imageData = ctx.getImageData(0, 0, maskSize, maskSize);
   const pixels = imageData.data;
-
-  const mask = new Uint8Array(
-    maskSize * maskSize
-  );
+  const mask = new Uint8Array(maskSize * maskSize);
 
   for (let i = 0; i < pixels.length; i += 4) {
     const alpha = pixels[i + 3];
-
     if (alpha > 20) {
       mask[i / 4] = 1;
     }
@@ -82,12 +64,40 @@ export function getPixelMask(image, maskSize = 200) {
   };
 }
 
-export function createTransformedMask(
-  pixelMask,
-  size,
-  rotation,
-  flip
-) {
+export function getTextPixelMask(text, font, maskSize = 200) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+  canvas.width = maskSize;
+  canvas.height = maskSize;
+
+  ctx.clearRect(0, 0, maskSize, maskSize);
+  ctx.fillStyle = "#000000";
+  ctx.font = font;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.fillText(text, maskSize / 2, maskSize / 2);
+
+  const imageData = ctx.getImageData(0, 0, maskSize, maskSize);
+  const pixels = imageData.data;
+  const mask = new Uint8Array(maskSize * maskSize);
+
+  for (let i = 0; i < pixels.length; i += 4) {
+    const alpha = pixels[i + 3];
+    if (alpha > 20) {
+      mask[i / 4] = 1;
+    }
+  }
+
+  return {
+    mask,
+    width: maskSize,
+    height: maskSize,
+  };
+}
+
+export function createTransformedMask(pixelMask, size, rotation, flip) {
   const maskSize = pixelMask.width;
 
   const sourceCanvas = document.createElement("canvas");
@@ -96,45 +106,26 @@ export function createTransformedMask(
   sourceCanvas.width = maskSize;
   sourceCanvas.height = maskSize;
 
-  const sourceImageData = sourceCtx.createImageData(
-    maskSize,
-    maskSize
-  );
+  const sourceImageData = sourceCtx.createImageData(maskSize, maskSize);
 
   for (let i = 0; i < pixelMask.mask.length; i++) {
     const value = pixelMask.mask[i];
-
     sourceImageData.data[i * 4] = 255;
     sourceImageData.data[i * 4 + 1] = 255;
     sourceImageData.data[i * 4 + 2] = 255;
-    sourceImageData.data[i * 4 + 3] =
-      value ? 255 : 0;
+    sourceImageData.data[i * 4 + 3] = value ? 255 : 0;
   }
 
-  sourceCtx.putImageData(
-    sourceImageData,
-    0,
-    0
-  );
+  sourceCtx.putImageData(sourceImageData, 0, 0);
 
-  // Keep collision mask small.
   const canvas = document.createElement("canvas");
-
   canvas.width = maskSize;
   canvas.height = maskSize;
 
-  const ctx = canvas.getContext("2d", {
-    willReadFrequently: true,
-  });
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-  ctx.translate(
-    maskSize / 2,
-    maskSize / 2
-  );
-
-  ctx.rotate(
-    (rotation * Math.PI) / 180
-  );
+  ctx.translate(maskSize / 2, maskSize / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
 
   if (flip) {
     ctx.scale(-1, 1);
@@ -148,20 +139,72 @@ export function createTransformedMask(
     maskSize
   );
 
-  const imageData = ctx.getImageData(
-    0,
-    0,
-    maskSize,
-    maskSize
-  );
+  const imageData = ctx.getImageData(0, 0, maskSize, maskSize);
 
   return {
     data: imageData.data,
     width: maskSize,
     height: maskSize,
-
-    // Actual motif size in canvas pixels.
     scale: size / maskSize,
+  };
+}
+
+export function createTransformedTextMask(
+  pixelMask,
+  width,
+  height,
+  rotation
+) {
+  const maskSize = pixelMask.width;
+
+  const sourceCanvas = document.createElement("canvas");
+  const sourceCtx = sourceCanvas.getContext("2d");
+
+  sourceCanvas.width = maskSize;
+  sourceCanvas.height = maskSize;
+
+  const sourceImageData = sourceCtx.createImageData(maskSize, maskSize);
+
+  for (let i = 0; i < pixelMask.mask.length; i++) {
+    const value = pixelMask.mask[i];
+
+    sourceImageData.data[i * 4] = 0;
+    sourceImageData.data[i * 4 + 1] = 0;
+    sourceImageData.data[i * 4 + 2] = 0;
+    sourceImageData.data[i * 4 + 3] = value ? 255 : 0;
+  }
+
+  sourceCtx.putImageData(sourceImageData, 0, 0);
+
+  const collisionSize = Math.max(width, height);
+
+  const canvas = document.createElement("canvas");
+
+  canvas.width = collisionSize;
+  canvas.height = collisionSize;
+
+  const ctx = canvas.getContext("2d", {
+    willReadFrequently: true,
+  });
+
+  ctx.translate(collisionSize / 2, collisionSize / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+
+  ctx.drawImage(
+    sourceCanvas,
+    -width / 2,
+    -height / 2,
+    width,
+    height
+  );
+
+  const imageData = ctx.getImageData(0, 0, collisionSize, collisionSize);
+
+  return {
+    data: imageData.data,
+    width: collisionSize,
+    height: collisionSize,
+    scale: 1,
   };
 }
 
@@ -172,127 +215,72 @@ export function checkPixelCollision(objectA, objectB) {
   const scaleA = maskA.scale;
   const scaleB = maskB.scale;
 
-  // Actual collision bounds in canvas pixels
-  const halfA = objectA.size / 2;
-  const halfB = objectB.size / 2;
+  const halfA =
+    Math.max(
+      objectA.width ?? objectA.size,
+      objectA.height ?? objectA.size
+    ) / 2;
+
+  const halfB =
+    Math.max(
+      objectB.width ?? objectB.size,
+      objectB.height ?? objectB.size
+    ) / 2;
 
   const leftA = objectA.x - halfA;
   const topA = objectA.y - halfA;
-
   const leftB = objectB.x - halfB;
   const topB = objectB.y - halfB;
 
   const rightA = objectA.x + halfA;
   const bottomA = objectA.y + halfA;
-
   const rightB = objectB.x + halfB;
   const bottomB = objectB.y + halfB;
 
-  // Quick bounding-box check
   const startX = Math.max(leftA, leftB);
   const startY = Math.max(topA, topB);
-
   const endX = Math.min(rightA, rightB);
   const endY = Math.min(bottomA, bottomB);
 
-  if (
-    startX >= endX ||
-    startY >= endY
-  ) {
+  if (startX >= endX || startY >= endY) {
     return false;
   }
 
-  // Convert canvas coordinates into mask coordinates.
-  const startMaskAX = Math.max(
-    0,
-    Math.floor(
-      (startX - leftA) / scaleA
-    )
-  );
-
-  const startMaskAY = Math.max(
-    0,
-    Math.floor(
-      (startY - topA) / scaleA
-    )
-  );
-
-  const startMaskBX = Math.max(
-    0,
-    Math.floor(
-      (startX - leftB) / scaleB
-    )
-  );
-
-  const startMaskBY = Math.max(
-    0,
-    Math.floor(
-      (startY - topB) / scaleB
-    )
-  );
+  const startMaskAX = Math.max(0, Math.floor((startX - leftA) / scaleA));
+  const startMaskAY = Math.max(0, Math.floor((startY - topA) / scaleA));
+  const startMaskBX = Math.max(0, Math.floor((startX - leftB) / scaleB));
+  const startMaskBY = Math.max(0, Math.floor((startY - topB) / scaleB));
 
   const endMaskAX = Math.min(
     maskA.width,
-    Math.ceil(
-      (endX - leftA) / scaleA
-    )
+    Math.ceil((endX - leftA) / scaleA)
   );
-
   const endMaskAY = Math.min(
     maskA.height,
-    Math.ceil(
-      (endY - topA) / scaleA
-    )
+    Math.ceil((endY - topA) / scaleA)
   );
-
   const endMaskBX = Math.min(
     maskB.width,
-    Math.ceil(
-      (endX - leftB) / scaleB
-    )
+    Math.ceil((endX - leftB) / scaleB)
   );
-
   const endMaskBY = Math.min(
     maskB.height,
-    Math.ceil(
-      (endY - topB) / scaleB
-    )
+    Math.ceil((endY - topB) / scaleB)
   );
 
-  // Compare the overlapping region.
-  for (
-    let ay = startMaskAY;
-    ay < endMaskAY;
-    ay++
-  ) {
-    for (
-      let ax = startMaskAX;
-      ax < endMaskAX;
-      ax++
-    ) {
-      const indexA =
-        (ay * maskA.width + ax) * 4;
+  for (let ay = startMaskAY; ay < endMaskAY; ay++) {
+    for (let ax = startMaskAX; ax < endMaskAX; ax++) {
+      const indexA = (ay * maskA.width + ax) * 4;
 
       if (maskA.data[indexA + 3] <= 20) {
         continue;
       }
 
-      // Position of this mask pixel
-      // in actual canvas coordinates.
-      const worldX =
-        leftA + (ax + 0.5) * scaleA;
+      const worldX = leftA + (ax + 0.5) * scaleA;
+      const worldY = topA + (ay + 0.5) * scaleA;
 
-      const worldY =
-        topA + (ay + 0.5) * scaleA;
-
-      // Convert that position into B's mask.
-      const bx = Math.floor(
-        (worldX - leftB) / scaleB
-      );
-
-      const by = Math.floor(
-        (worldY - topB) / scaleB
-      );
+      const bx = Math.floor((worldX - leftB) / scaleB);
+      const by = Math.floor((worldY - topB) / scaleB);
 
       if (
         bx < 0 ||
@@ -303,8 +291,7 @@ export function checkPixelCollision(objectA, objectB) {
         continue;
       }
 
-      const indexB =
-        (by * maskB.width + bx) * 4;
+      const indexB = (by * maskB.width + bx) * 4;
 
       if (maskB.data[indexB + 3] > 20) {
         return true;
@@ -329,7 +316,6 @@ export function placeMotifs({
   maxAttempts = 100,
 }) {
   const objects = [];
-
   let imagePool = shuffleArray(images, random);
   let imageIndex = 0;
 
@@ -343,41 +329,23 @@ export function placeMotifs({
     imageIndex++;
 
     const size = randomBetween(minSize, maxSize, random);
-
-    const rotation = randomBetween(
-      -rotationRange,
-      rotationRange,
-      random
-    );
-
+    const rotation = randomBetween(-rotationRange, rotationRange, random);
     const flip = allowFlip && random() < 0.5;
 
     let placed = false;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const x = randomBetween(
-        size / 2,
-        canvas.width - size / 2,
-        random
-      );
+      const x = randomBetween(size / 2, canvas.width - size / 2, random);
+      const y = randomBetween(size / 2, canvas.height - size / 2, random);
 
-      const y = randomBetween(
-        size / 2,
-        canvas.height - size / 2,
-        random
-      );
-
-      // Create the candidate first
       const candidate = {
         image: image.image,
-
         pixelMask: createTransformedMask(
           image.pixelMask,
           size,
           rotation,
           flip
         ),
-
         x,
         y,
         size,
@@ -385,14 +353,7 @@ export function placeMotifs({
         flip,
       };
 
-      const nearbyObjects = [
-        ...existingObjects,
-        ...objects,
-      ];
-
-      // ----------------------------------------
-      // STEP 1: Cheap circle collision
-      // ----------------------------------------
+      const nearbyObjects = [...existingObjects, ...objects];
 
       const circleCollision = checkCollision(
         x,
@@ -402,18 +363,11 @@ export function placeMotifs({
         spacing
       );
 
-      // If circles DON'T overlap,
-      // there is definitely no collision.
       if (!circleCollision) {
         objects.push(candidate);
         placed = true;
         break;
       }
-
-      // ----------------------------------------
-      // STEP 2: Expensive pixel collision
-      // Only happens when circles overlap
-      // ----------------------------------------
 
       let pixelCollision = false;
 
@@ -428,13 +382,10 @@ export function placeMotifs({
         }
       }
 
-      // Actual pixels overlap → reject
       if (pixelCollision) {
         continue;
       }
 
-      // Circles overlap, BUT actual pixels don't
-      // → allow placement
       objects.push(candidate);
       placed = true;
       break;
@@ -447,6 +398,7 @@ export function placeMotifs({
 
   return objects;
 }
+
 export function placeNames({
   text,
   count,
@@ -455,8 +407,8 @@ export function placeNames({
   canvas,
   random,
   existingObjects = [],
-  spacing = 30,
-  maxAttempts = 200,
+  spacing = 20,
+  maxAttempts = 500,
 }) {
   const objects = [];
 
@@ -464,11 +416,19 @@ export function placeNames({
 
   const textWidth = ctx.measureText(text).width;
   const namePadding = 40;
+
   const nameWidth = textWidth + namePadding;
   const nameHeight = size + namePadding;
 
+  const baseTextMask = getTextPixelMask(
+    text,
+    `${size}px "Love Light"`,
+    200
+  );
+
   for (let i = 0; i < count; i++) {
-    let placed = false;
+    let bestCandidate = null;
+    let bestScore = -Infinity;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const x = randomBetween(
@@ -483,54 +443,93 @@ export function placeNames({
         random
       );
 
+      const rotation = randomBetween(-15, 15, random);
+
+      const candidate = {
+        text,
+        x,
+        y,
+        size,
+        width: nameWidth,
+        height: nameHeight,
+        rotation,
+        pixelMask: createTransformedTextMask(
+          baseTextMask,
+          nameWidth,
+          nameHeight,
+          rotation
+        ),
+      };
+
+      const nearbyObjects = [
+        ...existingObjects,
+        ...objects,
+      ];
+
       let collision = false;
+      let closestDistance = Infinity;
 
-      for (const object of existingObjects) {
-        const distanceX = Math.abs(x - object.x);
-        const distanceY = Math.abs(y - object.y);
+      for (const object of nearbyObjects) {
+        const dx = x - object.x;
+        const dy = y - object.y;
 
-        const minimumX = object.size / 2 + nameWidth / 2 + spacing;
-        const minimumY = object.size / 2 + nameHeight / 2 + spacing;
+        const distance = Math.sqrt(
+          dx * dx + dy * dy
+        );
 
-        if (distanceX < minimumX && distanceY < minimumY) {
+        closestDistance = Math.min(
+          closestDistance,
+          distance
+        );
+
+        const objectWidth =
+          object.width ?? object.size;
+
+        const objectHeight =
+          object.height ?? object.size;
+
+        const minimumX =
+          objectWidth / 2 +
+          nameWidth / 2 +
+          spacing;
+
+        const minimumY =
+          objectHeight / 2 +
+          nameHeight / 2 +
+          spacing;
+
+        if (
+          Math.abs(dx) < minimumX &&
+          Math.abs(dy) < minimumY
+        ) {
           collision = true;
           break;
         }
       }
 
-      if (!collision) {
-        for (const name of objects) {
-          const distanceX = Math.abs(x - name.x);
-          const distanceY = Math.abs(y - name.y);
-
-          if (
-            distanceX < name.width / 2 + nameWidth / 2 + spacing &&
-            distanceY < name.height / 2 + nameHeight / 2 + spacing
-          ) {
-            collision = true;
-            break;
-          }
-        }
+      if (collision) {
+        continue;
       }
 
-      if (!collision) {
-        objects.push({
-          text,
-          x,
-          y,
-          size,
-          width: nameWidth,
-          height: nameHeight,
-          rotation: randomBetween(-15, 15, random),
-        });
+      let score = closestDistance;
 
-        placed = true;
-        break;
+      if (nearbyObjects.length === 0) {
+        score = 100000 + random() * 1000;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestCandidate = candidate;
       }
     }
 
-    if (!placed) {
-      console.log("Could not place name", i);
+    if (bestCandidate) {
+      objects.push(bestCandidate);
+    } else {
+      console.log(
+        "Could not place name",
+        i
+      );
     }
   }
 
@@ -549,7 +548,6 @@ export function placeFillers({
   maxAttempts = 300,
 }) {
   const objects = [];
-
   const types = ["star", "heart"];
   const starVariants = ["four", "five", "outline", "sparkle"];
   const heartVariants = ["filled", "outline"];
@@ -571,30 +569,30 @@ export function placeFillers({
         spacing
       );
 
-      if (!collision) {
-        const type = types[Math.floor(random() * types.length)];
-        let variant;
-
-        if (type === "star") {
-          variant =
-            starVariants[Math.floor(random() * starVariants.length)];
-        } else {
-          variant =
-            heartVariants[Math.floor(random() * heartVariants.length)];
-        }
-
-        objects.push({
-          type,
-          variant,
-          x,
-          y,
-          size,
-          rotation,
-        });
-
-        placed = true;
-        break;
+      if (collision) {
+        continue;
       }
+
+      const type = types[Math.floor(random() * types.length)];
+      let variant;
+
+      if (type === "star") {
+        variant = starVariants[Math.floor(random() * starVariants.length)];
+      } else {
+        variant = heartVariants[Math.floor(random() * heartVariants.length)];
+      }
+
+      objects.push({
+        type,
+        variant,
+        x,
+        y,
+        size,
+        rotation,
+      });
+
+      placed = true;
+      break;
     }
 
     if (!placed) {

@@ -39,6 +39,28 @@ function random() {
   return seed / 233280;
 }
 
+function getControlValue(id) {
+  return Number(document.getElementById(id)?.value ?? 0);
+}
+
+function updateControlLabels() {
+  const density = getControlValue("density");
+  const motifRatio = getControlValue("motifRatio");
+  const sizeVariation = getControlValue("sizeVariation");
+  const rotation = getControlValue("rotation");
+  const spacing = getControlValue("spacing");
+
+  document.getElementById("densityValue").textContent = `${density}%`;
+  document.getElementById("motifRatioValue").textContent =
+    `${motifRatio}/${100 - motifRatio}`;
+  document.getElementById("sizeVariationValue").textContent =
+    `${sizeVariation}%`;
+  document.getElementById("rotationValue").textContent =
+    `${rotation}°`;
+  document.getElementById("spacingValue").textContent =
+    `${spacing}%`;
+}
+
 function drawMotifs(objects) {
   for (const object of objects) {
     if (!object.image) continue;
@@ -171,9 +193,41 @@ async function generatePattern() {
     ctx.fillStyle = "#fafaf7";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    const density = getControlValue("density");
+    const motifRatio = getControlValue("motifRatio");
+    const sizeVariation = getControlValue("sizeVariation");
+    const rotation = getControlValue("rotation");
+    const spacingControl = getControlValue("spacing");
+    const nameFrequency = getControlValue("nameFrequency");
+
+    const totalMotifs = Math.round(
+      5 + (density / 100) * 35
+    );
+
+    const frogCount = Math.round(
+      totalMotifs * (motifRatio / 100)
+    );
+
+    const tulipCount = totalMotifs - frogCount;
+
+    const frogBaseSize = 600;
+    const tulipBaseSize = 400;
+
+    const frogVariation = 100 + sizeVariation;
+    const tulipVariation = 100 + sizeVariation;
+
+    const frogMinSize = frogBaseSize * (2 - frogVariation / 100);
+    const frogMaxSize = frogBaseSize * (frogVariation / 100);
+
+    const tulipMinSize = tulipBaseSize * (2 - tulipVariation / 100);
+    const tulipMaxSize = tulipBaseSize * (tulipVariation / 100);
+
+    const spacing = Math.round((spacingControl / 100) * 50);
+
     const loadedFrogs = await Promise.all(
       frogImages.map(async (src) => {
         const image = await loadImage(src);
+
         return {
           image,
           pixelMask: getPixelMask(image),
@@ -184,6 +238,7 @@ async function generatePattern() {
     const loadedTulips = await Promise.all(
       tulipImages.map(async (src) => {
         const image = await loadImage(src);
+
         return {
           image,
           pixelMask: getPixelMask(image, 200),
@@ -191,56 +246,77 @@ async function generatePattern() {
       })
     );
 
-    frogs = placeMotifs({
+    const name = document.getElementById("name")?.value.trim();
+
+    let generatedNames = [];
+
+    if (name && nameFrequency > 0) {
+      const nameCount = Math.max(
+        1,
+        Math.round(nameFrequency / 20)
+      );
+
+      generatedNames = placeNames({
+        text: name,
+        count: nameCount,
+        size: 100,
+        ctx,
+        canvas,
+        random,
+        existingObjects: [],
+        spacing: spacing + 30,
+      });
+    }
+
+    const generatedFrogs = placeMotifs({
       images: loadedFrogs,
-      count: 30,
-      minSize: 400,
-      maxSize: 800,
-      spacing: 5,
+      count: frogCount,
+
+      minSize: frogMinSize,
+      maxSize: frogMaxSize,
+
+      spacing,
       canvas,
       random,
-      rotationRange: 35,
+
+      existingObjects: generatedNames,
+
+      rotationRange: rotation,
       allowFlip: true,
     });
 
-    tulips = placeMotifs({
+    const generatedTulips = placeMotifs({
       images: loadedTulips,
-      count: 20,
-      minSize: 300,
-      maxSize: 500,
-      spacing: 5,
+      count: tulipCount,
+
+      minSize: tulipMinSize,
+      maxSize: tulipMaxSize,
+
+      spacing,
       canvas,
       random,
-      existingObjects: frogs,
-      rotationRange: 35,
+
+      existingObjects: [
+        ...generatedNames,
+        ...generatedFrogs,
+      ],
+
+      rotationRange: rotation,
       allowFlip: true,
     });
 
-    names = placeNames({
-      text: patternName,
-      count: 5,
-      size: 100,
-      ctx,
-      canvas,
-      random,
-      existingObjects: [...frogs, ...tulips],
-      spacing: 30,
-    });
-
-    fillers = placeFillers({
-      count: 40,
-      minSize: 50,
-      maxSize: 100,
-      spacing: 5,
-      canvas,
-      random,
-      existingObjects: [...frogs, ...tulips, ...names],
-      rotationRange: 180,
-    });
+    names = generatedNames;
+    frogs = generatedFrogs;
+    tulips = generatedTulips;
 
     drawPattern();
+
+    updateControlLabels();
   } catch (error) {
-    console.error("Pattern generation failed:", error);
+    console.error(
+      "Pattern generation failed:",
+      error
+    );
   }
 }
 
@@ -262,4 +338,22 @@ document.getElementById("export")?.addEventListener("click", () => {
   link.download = "greeble-pattern.png";
   link.href = canvas.toDataURL("image/png");
   link.click();
+});
+
+const controls = [
+  "density",
+  "motifRatio",
+  "sizeVariation",
+  "rotation",
+  "spacing",
+  "nameFrequency",
+];
+
+controls.forEach((id) => {
+  const control = document.getElementById(id);
+
+  control?.addEventListener("input", () => {
+    updateControlLabels();
+    generatePattern();
+  });
 });
