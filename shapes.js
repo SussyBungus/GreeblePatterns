@@ -118,14 +118,7 @@ function drawHeart(ctx, size, filled = true) {
     -5 * scale
   );
 
-  ctx.bezierCurveTo(
-    10 * scale,
-    0,
-    2 * scale,
-    5 * scale,
-    0,
-    8 * scale
-  );
+  ctx.bezierCurveTo(10 * scale, 0, 2 * scale, 5 * scale, 0, 8 * scale);
 
   ctx.closePath();
 
@@ -141,9 +134,7 @@ function drawOutlineHeart(ctx, size) {
 }
 
 function drawFiller(ctx, type, variant, size) {
-
   if (type === "star") {
-
     if (variant === "four") {
       drawFourPointStar(ctx, size, true);
     } else if (variant === "five") {
@@ -153,14 +144,11 @@ function drawFiller(ctx, type, variant, size) {
     } else if (variant === "sparkle") {
       drawSparkle(ctx, size);
     }
-
   } else if (type === "heart") {
-
     if (variant === "filled") {
       drawHeart(ctx, size, true);
     } else if (variant === "outline") {
       drawOutlineHeart(ctx, size);
     }
-
   }
 }
