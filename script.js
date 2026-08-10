@@ -6,11 +6,13 @@ import {
   placeFillers,
 } from "./util.js";
 
+// Canvas context
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const patternName = "Raymond";
 
+// Asset lists
 const frogImages = [
   "assets/frog1.png",
   "assets/frog2.png",
@@ -27,6 +29,7 @@ const tulipImages = [
   "assets/peony2.png",
 ];
 
+// Global state
 let frogs = [];
 let tulips = [];
 let names = [];
@@ -34,11 +37,14 @@ let fillers = [];
 
 let seed = Math.floor(Math.random() * 999999);
 let exportResolution = 2744;
+
+// Random number generator
 function random() {
   seed = (seed * 9301 + 49297) % 233280;
   return seed / 233280;
 }
 
+// UI helpers
 function getControlValue(id) {
   return Number(document.getElementById(id)?.value ?? 0);
 }
@@ -50,28 +56,19 @@ function updateControlLabels() {
   const rotation = getControlValue("rotation");
   const spacing = getControlValue("spacing");
 
-  document.getElementById("densityValue").textContent =
-    `${density}%`;
-
-  document.getElementById("motifRatioValue").textContent =
-    `${motifRatio}/${100 - motifRatio}`;
-
-  document.getElementById("sizeVariationValue").textContent =
-    `${sizeVariation}%`;
-
-  document.getElementById("rotationValue").textContent =
-    `${rotation}°`;
-
-  document.getElementById("spacingValue").textContent =
-    `${spacing}%`;
+  document.getElementById("densityValue").textContent = `${density}%`;
+  document.getElementById("motifRatioValue").textContent = `${motifRatio}/${100 - motifRatio}`;
+  document.getElementById("sizeVariationValue").textContent = `${sizeVariation}%`;
+  document.getElementById("rotationValue").textContent = `${rotation}°`;
+  document.getElementById("spacingValue").textContent = `${spacing}%`;
 }
 
+// Drawing routines
 function drawMotifs(objects) {
   for (const object of objects) {
     if (!object.image) continue;
 
     ctx.save();
-
     ctx.translate(object.x, object.y);
     ctx.rotate((object.rotation * Math.PI) / 180);
 
@@ -94,7 +91,6 @@ function drawMotifs(objects) {
 function drawNames(objects) {
   for (const name of objects) {
     ctx.save();
-
     ctx.translate(name.x, name.y);
     ctx.rotate((name.rotation * Math.PI) / 180);
 
@@ -109,15 +105,10 @@ function drawNames(objects) {
   }
 }
 
-/* =========================
-   HEART FILLER
-========================= */
-
 function drawHeart(ctx, size, filled = true) {
   const scale = size / 20;
 
   ctx.beginPath();
-
   ctx.moveTo(0, 8 * scale);
 
   ctx.bezierCurveTo(
@@ -178,7 +169,6 @@ function drawFiller(ctx, type, variant, size) {
 function drawFillers(objects) {
   for (const filler of objects) {
     ctx.save();
-
     ctx.translate(filler.x, filler.y);
     ctx.rotate((filler.rotation * Math.PI) / 180);
 
@@ -196,26 +186,11 @@ function drawFillers(objects) {
   }
 }
 
-/* =========================
-   DRAW PATTERN
-========================= */
-
 function drawPattern() {
-  ctx.clearRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "#fafaf7";
-
-  ctx.fillRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   drawMotifs(frogs);
   drawMotifs(tulips);
@@ -223,99 +198,44 @@ function drawPattern() {
   drawNames(names);
 }
 
-/* =========================
-   GENERATE PATTERN
-========================= */
-
+// Pattern generator
 async function generatePattern() {
   try {
-    ctx.clearRect(
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = "#fafaf7";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillRect(
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-    /* =========================
-       CONTROLS
-    ========================= */
-
+    // Read control parameters
     const density = getControlValue("density");
     const motifRatio = getControlValue("motifRatio");
-    const sizeVariation =
-      getControlValue("sizeVariation");
-    const rotation =
-      getControlValue("rotation");
-    const spacingControl =
-      getControlValue("spacing");
-    const nameFrequency =
-      getControlValue("nameFrequency");
+    const sizeVariation = getControlValue("sizeVariation");
+    const rotation = getControlValue("rotation");
+    const spacingControl = getControlValue("spacing");
+    const nameFrequency = getControlValue("nameFrequency");
 
-    /* =========================
-       MOTIF COUNTS
-    ========================= */
+    // Calculate motif counts
+    const totalMotifs = Math.round(5 + (density / 100) * 50);
+    const frogCount = Math.round(totalMotifs * (motifRatio / 100));
+    const tulipCount = totalMotifs - frogCount;
 
-    const totalMotifs = Math.round(
-      5 + (density / 100) * 50
-    );
-
-    const frogCount = Math.round(
-      totalMotifs * (motifRatio / 100)
-    );
-
-    const tulipCount =
-      totalMotifs - frogCount;
-
-    /* =========================
-       SIZE
-    ========================= */
-
+    // Calculate motif sizes
     const frogBaseSize = 600;
     const tulipBaseSize = 400;
 
-    const frogVariation =
-      100 + sizeVariation;
+    const frogVariation = 100 + sizeVariation;
+    const tulipVariation = 100 + sizeVariation;
 
-    const tulipVariation =
-      100 + sizeVariation;
+    const frogMinSize = frogBaseSize * (2 - frogVariation / 100);
+    const frogMaxSize = frogBaseSize * (frogVariation / 100);
 
-    const frogMinSize =
-      frogBaseSize *
-      (2 - frogVariation / 100);
+    const tulipMinSize = tulipBaseSize * (2 - tulipVariation / 100);
+    const tulipMaxSize = tulipBaseSize * (tulipVariation / 100);
 
-    const frogMaxSize =
-      frogBaseSize *
-      (frogVariation / 100);
+    // Calculate spacing
+    const spacing = Math.round((spacingControl / 100) * 50);
 
-    const tulipMinSize =
-      tulipBaseSize *
-      (2 - tulipVariation / 100);
-
-    const tulipMaxSize =
-      tulipBaseSize *
-      (tulipVariation / 100);
-
-    /* =========================
-       SPACING
-    ========================= */
-
-    const spacing = Math.round(
-      (spacingControl / 100) * 50
-    );
-
-    /* =========================
-       LOAD FROGS
-    ========================= */
-
+    // Load assets
     const loadedFrogs = await Promise.all(
       frogImages.map(async (src) => {
         const image = await loadImage(src);
@@ -326,10 +246,6 @@ async function generatePattern() {
         };
       })
     );
-
-    /* =========================
-       LOAD FLOWERS
-    ========================= */
 
     const loadedTulips = await Promise.all(
       tulipImages.map(async (src) => {
@@ -342,23 +258,12 @@ async function generatePattern() {
       })
     );
 
-    /* =========================
-       NAMES
-    ========================= */
-
-    const name =
-      document
-        .getElementById("name")
-        ?.value
-        .trim();
-
+    // Place names
+    const name = document.getElementById("name")?.value.trim();
     let generatedNames = [];
 
     if (name && nameFrequency > 0) {
-      const nameCount = Math.max(
-        1,
-        Math.round(nameFrequency / 25)
-      );
+      const nameCount = Math.max(1, Math.round(nameFrequency / 25));
 
       generatedNames = placeNames({
         text: name,
@@ -372,146 +277,86 @@ async function generatePattern() {
       });
     }
 
-    /* =========================
-       FROGS
-    ========================= */
-
+    // Place frogs
     const generatedFrogs = placeMotifs({
       images: loadedFrogs,
-
       count: frogCount,
-
       minSize: frogMinSize,
       maxSize: frogMaxSize,
-
       spacing,
       canvas,
       random,
-
       existingObjects: generatedNames,
-
       rotationRange: rotation,
       allowFlip: true,
     });
 
-    /* =========================
-       FLOWERS
-    ========================= */
-
+    // Place flowers
     const generatedTulips = placeMotifs({
       images: loadedTulips,
-
       count: tulipCount,
-
       minSize: tulipMinSize,
       maxSize: tulipMaxSize,
-
       spacing,
       canvas,
       random,
-
       existingObjects: [
         ...generatedNames,
         ...generatedFrogs,
       ],
-
       rotationRange: rotation,
       allowFlip: true,
     });
 
-    /* =========================
-       OUTLINE HEART FILLERS
-    ========================= */
-
+    // Place fillers
     fillers = placeFillers({
       count: 60,
-
       minSize: 40,
       maxSize: 80,
-
       spacing: 25,
-
       canvas,
       random,
-
       existingObjects: [
         ...generatedNames,
         ...generatedFrogs,
         ...generatedTulips,
       ],
-
       rotationRange: 180,
     });
 
-    /* =========================
-       UPDATE GLOBAL OBJECTS
-    ========================= */
-
+    // Update state and render
     names = generatedNames;
     frogs = generatedFrogs;
     tulips = generatedTulips;
 
-    /* =========================
-       DRAW
-    ========================= */
-
     drawPattern();
-
     updateControlLabels();
 
   } catch (error) {
-    console.error(
-      "Pattern generation failed:",
-      error
-    );
+    console.error("Pattern generation failed:", error);
   }
 }
 
-/* =========================
-   RANDOMIZE
-========================= */
+// Event handlers
+document.getElementById("randomizeSeed")?.addEventListener("click", () => {
+  seed = Math.floor(Math.random() * 999999);
+  generatePattern();
+});
 
-document
-  .getElementById("randomizeSeed")
-  ?.addEventListener("click", () => {
-    seed = Math.floor(
-      Math.random() * 999999
-    );
-
-    generatePattern();
-  });
-
-/* =========================
-   GENERATE BUTTON
-========================= */
-
-document
-  .getElementById("generate")
-  ?.addEventListener("click", () => {
-    generatePattern();
-  });
-
-/* =========================
-   INITIAL GENERATION
-========================= */
+document.getElementById("generate")?.addEventListener("click", () => {
+  generatePattern();
+});
 
 document.fonts.ready.then(() => {
   generatePattern();
 });
 
-/* =========================
-   EXPORT
-========================= */
-const resolutionButtons =
-  document.querySelectorAll(
-    ".resolution-option"
-  );
+// Export configuration
+const resolutionButtons = document.querySelectorAll(".resolution-option");
 
 resolutionButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    exportResolution = Number(
-      button.dataset.resolution
-    );
+    exportResolution = Number(button.dataset.resolution);
 
     resolutionButtons.forEach((btn) => {
       btn.classList.remove("active");
@@ -520,6 +365,7 @@ resolutionButtons.forEach((button) => {
     button.classList.add("active");
   });
 });
+
 document.getElementById("export")?.addEventListener("click", () => {
   const exportCanvas = document.createElement("canvas");
 
@@ -528,16 +374,9 @@ document.getElementById("export")?.addEventListener("click", () => {
 
   const exportCtx = exportCanvas.getContext("2d");
 
-  // White/background
   exportCtx.fillStyle = "#fafaf7";
-  exportCtx.fillRect(
-    0,
-    0,
-    exportResolution,
-    exportResolution
-  );
+  exportCtx.fillRect(0, 0, exportResolution, exportResolution);
 
-  // Scale the preview canvas to export resolution
   exportCtx.drawImage(
     canvas,
     0,
@@ -547,20 +386,12 @@ document.getElementById("export")?.addEventListener("click", () => {
   );
 
   const link = document.createElement("a");
-
   link.download = `greeble-pattern-${exportResolution}x${exportResolution}.png`;
-
-  link.href = exportCanvas.toDataURL(
-    "image/png"
-  );
-
+  link.href = exportCanvas.toDataURL("image/png");
   link.click();
 });
 
-/* =========================
-   RANGE CONTROLS
-========================= */
-
+// Control listeners
 const controls = [
   "density",
   "motifRatio",
@@ -571,15 +402,10 @@ const controls = [
 ];
 
 controls.forEach((id) => {
-  const control =
-    document.getElementById(id);
+  const control = document.getElementById(id);
 
-  control?.addEventListener(
-    "input",
-    () => {
-      updateControlLabels();
-      generatePattern();
-    }
-  );
+  control?.addEventListener("input", () => {
+    updateControlLabels();
+    generatePattern();
+  });
 });
-

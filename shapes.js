@@ -1,8 +1,6 @@
 function drawHeart(ctx, size) {
   const scale = size / 20;
-
   ctx.beginPath();
-
   ctx.moveTo(0, 8 * scale);
 
   ctx.bezierCurveTo(
@@ -13,7 +11,6 @@ function drawHeart(ctx, size) {
     -10 * scale,
     -5 * scale
   );
-
   ctx.bezierCurveTo(
     -10 * scale,
     -10 * scale,
@@ -42,7 +39,6 @@ function drawHeart(ctx, size) {
   );
 
   ctx.closePath();
-
   ctx.stroke();
 }
 
